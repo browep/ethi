@@ -110,6 +110,7 @@ you will not need to change this values.")
 (defun handle-response (response)
   "Convert from json, get result, handle errors, etc..."
   ;; decode JSON string to CL alist
+  (format t "resp    : ~A~%" response)
   (let ((decoded-response (cl-json:decode-json-from-string response)))
     ;; check for errors
     (if (response-error decoded-response)
@@ -121,12 +122,14 @@ you will not need to change this values.")
   "Generic http post request with raw body"
   (drakma:http-request uri
                        :method :post
+		       :content-type "application/json"
                        :content raw-body))
 
 (defun api-call (method params)
   "To be used by all methods"
   (let ((raw-body (cl-json:encode-json-to-string
                    (make-body method params))))
+    (format t "raw-body: ~A~%" raw-body)
     (handle-response
      (make-request (uri) raw-body))))
 

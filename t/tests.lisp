@@ -3,7 +3,7 @@
 (in-package #:ethi-test)
 
 ;; configure prove
-(setf prove:*debug-on-error* t)
+(setf prove:*debug-on-error* nil)
 (setf prove:*enable-colors* nil)
 
 ;; set up test node
@@ -44,7 +44,18 @@
   (ethi::transaction-object :from (car (ethi:eth/accounts))
                             :to (cadr (ethi:eth/accounts))
                             :value "0x9184e72a"
+			    :gas (format nil "0x~X" 21000)
                             :data ""))
+
+(defun make-tx (gas gasPrice)
+  (format t "making tx for gas:~A gasPrice:~A~%" gas gasPrice)
+  (ethi::transaction-object :from (car (ethi:eth/accounts))
+                            :to (cadr (ethi:eth/accounts))
+                            :value "0x9184e72a"
+			    :gas (format nil "0x~X" gas)
+			    :gas-price (format nil "0x~X" gas)
+                            :data ""))
+
 
 ;;; tests
 
@@ -64,7 +75,7 @@
     (subtest "Given the correct host and port are given"
 
       (ok (starts-with-p (ethi:web3/client-version)
-                         "Geth")
+                         "EthereumJS")
           "Can give a client version back")
 
       (is (ethi:web3/sha3 "0x68656c6c6f20776f726c64")
@@ -72,13 +83,13 @@
           "Can give a sha3 of data")
 
       (is (ethi:net/version)
-          "555" ; check out the t/genesis.json file where it is specified
+          "50" ; check out the t/genesis.json file where it is specified
           "Can give the net version")
 
-      (ok (starts-with-hex-p (ethi:net/peer-count))
+      (ok (eq (ethi:net/peer-count) 0)
           "Can give the peer count")
 
-      (ok (starts-with-hex-p (ethi:eth/protocol-version))
+      (ok (string= (ethi:eth/protocol-version) "63")
           "Can give the protocol version")
 
       ;; it is either nil or a list with relevant data
@@ -88,7 +99,7 @@
       ;; (ok (starts-with-hex-p (ethi:eth/coinbase))
       ;;     "Can check the coinbase address")
 
-      (ok (listp (ethi:eth/mining))
+      (ok  (ethi:eth/mining)
           "Can check if geth is currently mining")
 
       (ok (starts-with-hex-p (ethi:eth/hashrate))
@@ -121,20 +132,20 @@
             "latest"))
           "Can return the number of transactions send from an address")
 
-      (ok (starts-with-hex-p
-           (ethi:eth/get-block-transaction-count-by-hash
-            (cdr (assoc :hash (ethi:eth/get-block-by-number "0x1" nil)))))
-          "Can return the number of transactions in a block from the block hash")
+;      (ok (starts-with-hex-p
+ ;          (ethi:eth/get-block-transaction-count-by-hash
+  ;          (cdr (assoc :hash (ethi:eth/get-block-by-number "0x1" nil)))))
+   ;       "Can return the number of transactions in a block from the block hash")
 
-      (ok (starts-with-hex-p
-           (ethi:eth/get-block-transaction-count-by-number "latest"))
+      (ok (typep
+           (ethi:eth/get-block-transaction-count-by-number "latest") 'integer)
            "Can get the number of transactions in a block from a block number")
 
-      (ok (starts-with-hex-p
-           (ethi:eth/get-uncle-count-by-block-hash
-            (cdr (assoc :hash (ethi:eth/get-block-by-number "0x1" nil)))))
-          "Returns the number of uncles in a block from a block matching the
-given block hash")
+;      (ok (starts-with-hex-p
+;           (ethi:eth/get-uncle-count-by-block-hash
+;            (cdr (assoc :hash (ethi:eth/get-block-by-number "0x1" nil)))))
+;          "Returns the number of uncles in a block from a block matching the
+;given block hash")
 
       (ok (starts-with-hex-p
            (ethi:eth/get-uncle-count-by-block-number "latest"))
@@ -151,8 +162,13 @@ given block number")
            (ethi:eth/sign (car (ethi:eth/accounts)) "0xdeadbeaf"))
           "Can sign data")
 
+      (ok (starts-with-hex-p
+           (ethi:eth/estimate-gas (make-tx 21000 300000000000)))
+          "Can make a call or transaction, which won't be added to the blockchain and returns the used gas, which can be used for estimating the used gas")
+
+
       (ok (transaction-hash-p
-           (ethi:eth/send-transaction *transaction-object*))
+           (ethi:eth/send-transaction (make-tx 21000 300000000000)))
           "Can send transaction")
 
       ;; (ok (transaction-hash-p
@@ -163,9 +179,6 @@ given block number")
            (ethi:eth/call *transaction-object* "latest"))
           "Can execute a new message call immediately without creating a transaction on the block chain")
 
-      (ok (starts-with-hex-p
-           (ethi:eth/estimate-gas *transaction-object*))
-          "Can make a call or transaction, which won't be added to the blockchain and returns the used gas, which can be used for estimating the used gas")
 
       (ok (starts-with-hex-p
            (let ((block-hash (cdr (assoc :hash (ethi:eth/get-block-by-number "0x1" nil)))))
@@ -188,12 +201,12 @@ given block number")
            (ethi:eth/get-transaction-by-block-hash-and-index
             "0x0000000000000000000000000000000000000000000000000000000000000000"
             "0x0"))
-          "Can return information about a transaction by block hash and transaction index position.")
+          "Can return information about a transaction by block hash and transaction index position. first")
 
       (ok (listp
            (ethi:eth/get-transaction-by-block-number-and-index
-            "0x0" "0x0"))
-          "Can return information about a transaction by block hash and transaction index position.")
+            "0x1" "0x0"))
+          "Can return information about a transaction by block hash and transaction index position. second")
 
       (ok (listp
            (let ((transaction-hash (create-transaction)))
