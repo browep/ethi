@@ -1,5 +1,7 @@
 (cl:defpackage #:ethi
   (:use #:cl)
+  ;; config
+  (:export #:modify-config)
   ;; web3
   (:export #:web3/client-version
            #:web3/sha3)
@@ -34,6 +36,7 @@
            #:eth/get-transaction-by-block-hash-and-index
            #:eth/get-transaction-by-block-number-and-index
            #:eth/get-transaction-receipt
+	   #:eth/get-logs
            )
   )
 (in-package #:ethi)
@@ -180,6 +183,13 @@ you will not need to change this values.")
 (declare-endpoint "eth_getUncleCountByBlockNumber" quantity/tag)
 (declare-endpoint "eth_getCode" address quantity/tag)
 (declare-endpoint "eth_sign" address data)
+
+
+
+
+
+
+
 (declare-endpoint "eth_sendTransaction" transaction-object)
 (declare-endpoint "eth_sendRawTransaction" signed-transaction-data)
 (declare-endpoint "eth_call" transaction-object quantity/tag)
@@ -190,3 +200,4 @@ you will not need to change this values.")
 (declare-endpoint "eth_getTransactionByBlockHashAndIndex" transaction-hash transaction-index)
 (declare-endpoint "eth_getTransactionByBlockNumberAndIndex" transaction-block transaction-index)
 (declare-endpoint "eth_getTransactionReceipt" transaction-hash)
+(declare-endpoint "eth_getLogs" filters)
